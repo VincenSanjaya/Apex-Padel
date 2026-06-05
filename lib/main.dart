@@ -5,7 +5,6 @@ import 'package:google_fonts/google_fonts.dart';
 
 import 'models/match_record.dart';
 import 'providers/match_provider.dart';
-import 'screens/main_layout_screen.dart';
 import 'screens/splash_screen.dart';
 
 void main() async {

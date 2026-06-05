@@ -6,6 +6,7 @@ import 'package:fl_chart/fl_chart.dart';
 import '../providers/match_provider.dart';
 import '../providers/nav_provider.dart';
 import '../models/match_record.dart';
+import 'profile_screen.dart';
 
 class DashboardScreen extends ConsumerWidget {
   const DashboardScreen({super.key});
@@ -95,15 +96,23 @@ class DashboardScreen extends ConsumerWidget {
       ),
       title: Row(
         children: [
-          Container(
-            width: 40,
-            height: 40,
-            decoration: BoxDecoration(
-              shape: BoxShape.circle,
-              border: Border.all(color: Theme.of(context).colorScheme.primary.withOpacity(0.2), width: 2),
-              image: const DecorationImage(
-                image: NetworkImage('https://lh3.googleusercontent.com/aida-public/AB6AXuAfx3EyoDjA79PbSoYpgZFqJS_652zL8GziUzoVGh3XNKIDwvUyB2JWHxXZZ1tiR7xme7BiU4jA4dSkpBjlBWvWRWvtSpW3vcYpGR9KIGQXMMpRcB_-tVNlricyCtnW7yYssJiEaBmftyV2mKGMg9qBUHRuVol5KN0tu3jT31gmuoiJnB97euGMesw7N1xS4qdJCw_MTOJH5maXMIPf58FIxx84rrTDYcRn6IdVTR80jSVljCJviDDXU10aDXda-1hfPLNECUFJl67Y'),
-                fit: BoxFit.cover,
+          GestureDetector(
+            onTap: () {
+              Navigator.push(
+                context,
+                MaterialPageRoute(builder: (context) => const ProfileScreen()),
+              );
+            },
+            child: Container(
+              width: 40,
+              height: 40,
+              decoration: BoxDecoration(
+                shape: BoxShape.circle,
+                border: Border.all(color: Theme.of(context).colorScheme.primary.withOpacity(0.2), width: 2),
+                image: const DecorationImage(
+                  image: NetworkImage('https://lh3.googleusercontent.com/aida-public/AB6AXuAfx3EyoDjA79PbSoYpgZFqJS_652zL8GziUzoVGh3XNKIDwvUyB2JWHxXZZ1tiR7xme7BiU4jA4dSkpBjlBWvWRWvtSpW3vcYpGR9KIGQXMMpRcB_-tVNlricyCtnW7yYssJiEaBmftyV2mKGMg9qBUHRuVol5KN0tu3jT31gmuoiJnB97euGMesw7N1xS4qdJCw_MTOJH5maXMIPf58FIxx84rrTDYcRn6IdVTR80jSVljCJviDDXU10aDXda-1hfPLNECUFJl67Y'),
+                  fit: BoxFit.cover,
+                ),
               ),
             ),
           ),

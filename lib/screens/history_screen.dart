@@ -5,12 +5,29 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import '../providers/match_provider.dart';
 import '../models/match_record.dart';
 
+class MatchFilterNotifier extends Notifier<MatchResult?> {
+  @override
+  MatchResult? build() => null;
+
+  void updateFilter(MatchResult? result) {
+    state = result;
+  }
+}
+
+final matchFilterProvider = NotifierProvider<MatchFilterNotifier, MatchResult?>(MatchFilterNotifier.new);
+
 class HistoryScreen extends ConsumerWidget {
   const HistoryScreen({super.key});
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
-    final matches = ref.watch(matchProvider);
+    final filter = ref.watch(matchFilterProvider);
+    final allMatches = ref.watch(matchProvider);
+    
+    final matches = filter == null 
+        ? allMatches 
+        : allMatches.where((m) => m.result == filter).toList();
+
     final sortedMatches = List<MatchRecord>.from(matches)
       ..sort((a, b) => b.date.compareTo(a.date)); // Descending order
 
@@ -44,14 +61,57 @@ class HistoryScreen extends ConsumerWidget {
                       ),
                     ],
                   ),
-                  Container(
-                    padding: const EdgeInsets.all(8),
-                    decoration: BoxDecoration(
-                      color: Theme.of(context).colorScheme.surfaceContainerHigh,
-                      border: Border.all(color: Colors.white.withValues(alpha: 0.05)),
-                      borderRadius: BorderRadius.circular(8),
+                  PopupMenuButton<String>(
+                    initialValue: filter == null ? 'all' : filter.name,
+                    onSelected: (String result) {
+                      MatchResult? newFilter;
+                      if (result == 'win') newFilter = MatchResult.win;
+                      else if (result == 'loss') newFilter = MatchResult.loss;
+                      else if (result == 'draw') newFilter = MatchResult.draw;
+                      
+                      ref.read(matchFilterProvider.notifier).updateFilter(newFilter);
+                    },
+                    color: Theme.of(context).colorScheme.surfaceContainerHigh,
+                    shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+                    offset: const Offset(0, 40),
+                    itemBuilder: (context) => [
+                      PopupMenuItem(
+                        value: 'all',
+                        child: Text('All Matches', style: TextStyle(color: filter == null ? Theme.of(context).colorScheme.primary : null)),
+                      ),
+                      PopupMenuItem(
+                        value: 'win',
+                        child: Text('Wins', style: TextStyle(color: filter == MatchResult.win ? Theme.of(context).colorScheme.primary : null)),
+                      ),
+                      PopupMenuItem(
+                        value: 'loss',
+                        child: Text('Losses', style: TextStyle(color: filter == MatchResult.loss ? Theme.of(context).colorScheme.primary : null)),
+                      ),
+                      PopupMenuItem(
+                        value: 'draw',
+                        child: Text('Draws', style: TextStyle(color: filter == MatchResult.draw ? Theme.of(context).colorScheme.primary : null)),
+                      ),
+                    ],
+                    child: Container(
+                      padding: const EdgeInsets.all(8),
+                      decoration: BoxDecoration(
+                        color: filter != null 
+                            ? Theme.of(context).colorScheme.primary.withValues(alpha: 0.2)
+                            : Theme.of(context).colorScheme.surfaceContainerHigh,
+                        border: Border.all(
+                          color: filter != null 
+                              ? Theme.of(context).colorScheme.primary.withValues(alpha: 0.5)
+                              : Colors.white.withValues(alpha: 0.05)
+                        ),
+                        borderRadius: BorderRadius.circular(8),
+                      ),
+                      child: Icon(
+                        Icons.filter_list, 
+                        color: filter != null 
+                            ? Theme.of(context).colorScheme.primary 
+                            : Theme.of(context).colorScheme.outline
+                      ),
                     ),
-                    child: Icon(Icons.filter_list, color: Theme.of(context).colorScheme.outline),
                   )
                 ],
               ),

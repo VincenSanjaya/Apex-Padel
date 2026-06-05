@@ -23,8 +23,8 @@ Programmatic Motion UI: Dilengkapi dengan custom animated splash screen dan tran
 🛠 Tech Stack
 Framework: Flutter (Dart)
 
-State Management: [Isi dengan Provider / Riverpod / BLoC yang kamu gunakan]
+State Management: Provider
 
-Local Database: [Isi dengan Hive / Isar / SQLite]
+Local Database: Hive
 
 UI/UX: Native Canvas Animations & Custom Painter
