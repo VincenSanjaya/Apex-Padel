@@ -4,6 +4,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 import '../providers/match_provider.dart';
 import '../providers/nav_provider.dart';
+import '../providers/session_provider.dart';
 import '../models/match_record.dart';
 
 class LogMatchScreen extends ConsumerStatefulWidget {
@@ -16,7 +17,6 @@ class LogMatchScreen extends ConsumerStatefulWidget {
 class _LogMatchScreenState extends ConsumerState<LogMatchScreen> {
   final _formKey = GlobalKey<FormState>();
   
-  final _locationController = TextEditingController();
   final _partnerController = TextEditingController();
   
   ScoringFormat _selectedFormat = ScoringFormat.traditional;
@@ -31,7 +31,6 @@ class _LogMatchScreenState extends ConsumerState<LogMatchScreen> {
 
   @override
   void dispose() {
-    _locationController.dispose();
     _partnerController.dispose();
     for (var c in _usSetControllers) { c.dispose(); }
     for (var c in _themSetControllers) { c.dispose(); }
@@ -40,7 +39,7 @@ class _LogMatchScreenState extends ConsumerState<LogMatchScreen> {
     super.dispose();
   }
 
-  void _saveMatch() {
+  Future<void> _saveMatch() async {
     if (!_formKey.currentState!.validate()) return;
     
     String scoreData = '';
@@ -69,25 +68,32 @@ class _LogMatchScreenState extends ConsumerState<LogMatchScreen> {
       scoreData = '$myPts-$oppPts';
     }
 
-    final location = _locationController.text.trim();
+    final activeSession = ref.read(activeSessionProvider);
+    final location = activeSession?.location ?? 'Unknown Court';
     final partner = _partnerController.text.trim();
 
     // Save using provider
-    ref.read(matchProvider.notifier).addMatch(
+    final matchId = await ref.read(matchProvider.notifier).addMatch(
       date: DateTime.now(),
-      location: location.isEmpty ? 'Unknown Court' : location,
+      location: location,
       partnerName: partner.isEmpty ? null : partner,
       scoringFormat: _selectedFormat,
       scoreData: scoreData,
     );
 
+    if (activeSession != null) {
+      await ref.read(activeSessionProvider.notifier).addMatchToSession(matchId);
+    }
+
     // Reset Form
-    _locationController.clear();
+    _partnerController.clear();
     _partnerController.clear();
     for (var c in _usSetControllers) { c.clear(); }
     for (var c in _themSetControllers) { c.clear(); }
     _myPointsController.text = '0';
     _oppPointsController.text = '0';
+
+    if (!mounted) return;
 
     // Show success & Redirect
     ScaffoldMessenger.of(context).showSnackBar(const SnackBar(content: Text('Match Logged Successfully!')));
@@ -103,6 +109,54 @@ class _LogMatchScreenState extends ConsumerState<LogMatchScreen> {
 
   @override
   Widget build(BuildContext context) {
+    final activeSession = ref.watch(activeSessionProvider);
+
+    if (activeSession == null) {
+      return Scaffold(
+        extendBodyBehindAppBar: true,
+        appBar: _buildAppBar(context),
+        body: Center(
+          child: Padding(
+            padding: const EdgeInsets.symmetric(horizontal: 24),
+            child: Column(
+              mainAxisAlignment: MainAxisAlignment.center,
+              children: [
+                Icon(Icons.lock_outline, size: 80, color: Theme.of(context).colorScheme.outline.withValues(alpha: 0.5)),
+                const SizedBox(height: 24),
+                Text('NO ACTIVE SESSION', style: Theme.of(context).textTheme.displayMedium?.copyWith(color: Colors.white)),
+                const SizedBox(height: 8),
+                Text(
+                  'You need to start a padel session before you can log matches. Head back to the dashboard to start one!',
+                  textAlign: TextAlign.center,
+                  style: Theme.of(context).textTheme.bodyMedium?.copyWith(color: Theme.of(context).colorScheme.outline, height: 1.5),
+                ),
+                const SizedBox(height: 40),
+                ElevatedButton(
+                  style: ElevatedButton.styleFrom(
+                    backgroundColor: Theme.of(context).colorScheme.primary,
+                    foregroundColor: Theme.of(context).colorScheme.onPrimary,
+                    padding: const EdgeInsets.symmetric(vertical: 20, horizontal: 40),
+                    shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
+                    elevation: 0,
+                  ),
+                  onPressed: () {
+                    ref.read(bottomNavIndexProvider.notifier).setIndex(0);
+                  },
+                  child: Text(
+                    'GO TO DASHBOARD',
+                    style: Theme.of(context).textTheme.headlineMedium?.copyWith(
+                      color: Theme.of(context).colorScheme.onPrimary,
+                      letterSpacing: 1.5,
+                    ),
+                  ),
+                ),
+              ],
+            ),
+          ),
+        ),
+      );
+    }
+
     return Scaffold(
       extendBodyBehindAppBar: true,
       appBar: _buildAppBar(context),
@@ -116,11 +170,7 @@ class _LogMatchScreenState extends ConsumerState<LogMatchScreen> {
               Text('LOG NEW MATCH', style: Theme.of(context).textTheme.displayMedium?.copyWith(color: Colors.white)),
               const SizedBox(height: 8),
               Text('Track your performance and climb the rankings.', style: Theme.of(context).textTheme.bodyMedium?.copyWith(color: Theme.of(context).colorScheme.outline)),
-              const SizedBox(height: 32),
-              
-              _buildInputLabel('Location Name'),
-              _buildTextField(_locationController, Icons.location_on, 'e.g. Padel Club Central'),
-              const SizedBox(height: 24),
+              const SizedBox(height: 8),
               
               _buildInputLabel('Partner Name (Optional)'),
               _buildTextField(_partnerController, Icons.group, 'Search recent partners...'),

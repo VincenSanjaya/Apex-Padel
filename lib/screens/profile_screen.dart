@@ -5,6 +5,7 @@ import 'package:google_fonts/google_fonts.dart';
 
 import '../providers/match_provider.dart';
 import '../utils/analytics_engine.dart';
+import '../widgets/segmented_rating_gauge.dart';
 
 class ProfileScreen extends ConsumerWidget {
   const ProfileScreen({super.key});
@@ -99,72 +100,7 @@ class ProfileScreen extends ConsumerWidget {
   }
 
   Widget _buildHeroSection(BuildContext context, double rating) {
-    String badge = 'BEGINNER';
-    if (rating >= 3.0 && rating < 5.0) badge = 'INTERMEDIATE';
-    else if (rating >= 5.0) badge = 'ADVANCED';
-
-    return Column(
-      children: [
-        Container(
-          width: 128,
-          height: 128,
-          margin: const EdgeInsets.only(bottom: 16),
-          padding: const EdgeInsets.all(4),
-          decoration: BoxDecoration(
-            shape: BoxShape.circle,
-            border: Border.all(color: Theme.of(context).colorScheme.surfaceContainerHigh, width: 4),
-            boxShadow: [
-              BoxShadow(
-                color: Theme.of(context).colorScheme.primary.withValues(alpha: 0.3),
-                blurRadius: 15,
-                spreadRadius: 2,
-              )
-            ],
-          ),
-          child: ColorFiltered(
-            colorFilter: const ColorFilter.matrix([
-              0.2126, 0.7152, 0.0722, 0, 0,
-              0.2126, 0.7152, 0.0722, 0, 0,
-              0.2126, 0.7152, 0.0722, 0, 0,
-              0,      0,      0,      1, 0,
-            ]),
-            child: const CircleAvatar(
-              backgroundImage: NetworkImage('https://lh3.googleusercontent.com/aida-public/AB6AXuA8qv8w1walvjNfUu0fvQd4t2hiGjQGUH6PFWe1I2U46Hi79zdLPdZZ6_m1OxENmtuMh2BlzUTTQE89Zfd8ZRn4I3-gz9j9CCe_mpyMtNlfiZ-oU7Ur2OZVD9TEVQVzQSSKIABVp9n2zYg3KOE-OgFQmQip4FxfdHOBbbCR_jRvLc39_uD0QA0CIRDDk3c0qRFSxnn38511s0hnubJM37h_DRr8ZT4Biti7L2ciHXdCbPv5uQoE_MQ7Y35h6z6NUJKPaV4SJ8dkLzFL'),
-            ),
-          ),
-        ),
-        Text(
-          rating.toStringAsFixed(1),
-          style: GoogleFonts.oswald(
-            fontSize: 64,
-            fontWeight: FontWeight.bold,
-            color: Theme.of(context).colorScheme.primary,
-            height: 1.0,
-            shadows: [
-              Shadow(
-                color: Theme.of(context).colorScheme.primary.withValues(alpha: 0.4),
-                blurRadius: 15,
-              )
-            ]
-          ),
-        ),
-        const SizedBox(height: 8),
-        Container(
-          padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 4),
-          decoration: BoxDecoration(
-            border: Border.all(color: Theme.of(context).colorScheme.primary, width: 2),
-            borderRadius: BorderRadius.circular(30),
-          ),
-          child: Text(
-            badge,
-            style: Theme.of(context).textTheme.labelLarge?.copyWith(
-              color: Theme.of(context).colorScheme.primary,
-              letterSpacing: 2.0,
-            ),
-          ),
-        ),
-      ],
-    );
+    return SegmentedRatingGauge(rating: rating);
   }
 
   Widget _buildQuickStats(BuildContext context, LifetimeStats stats) {

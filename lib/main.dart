@@ -4,7 +4,9 @@ import 'package:hive_flutter/hive_flutter.dart';
 import 'package:google_fonts/google_fonts.dart';
 
 import 'models/match_record.dart';
+import 'models/play_session.dart';
 import 'providers/match_provider.dart';
+import 'providers/session_provider.dart';
 import 'screens/splash_screen.dart';
 
 void main() async {
@@ -17,9 +19,11 @@ void main() async {
   Hive.registerAdapter(MatchRecordAdapter());
   Hive.registerAdapter(MatchResultAdapter());
   Hive.registerAdapter(ScoringFormatAdapter());
+  Hive.registerAdapter(PlaySessionAdapter());
   
-  // Open the main match box
+  // Open the boxes
   await Hive.openBox<MatchRecord>(matchBoxName);
+  await Hive.openBox<PlaySession>(sessionBoxName);
 
   runApp(
     const ProviderScope(

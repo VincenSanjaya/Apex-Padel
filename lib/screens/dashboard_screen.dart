@@ -5,8 +5,12 @@ import 'package:fl_chart/fl_chart.dart';
 
 import '../providers/match_provider.dart';
 import '../providers/nav_provider.dart';
+import '../providers/session_provider.dart';
+import '../utils/analytics_engine.dart';
 import '../models/match_record.dart';
+import '../models/play_session.dart';
 import 'profile_screen.dart';
+import '../widgets/segmented_rating_gauge.dart';
 
 class DashboardScreen extends ConsumerWidget {
   const DashboardScreen({super.key});
@@ -15,6 +19,7 @@ class DashboardScreen extends ConsumerWidget {
   Widget build(BuildContext context, WidgetRef ref) {
     final currentRating = ref.watch(currentRatingProvider);
     final matches = ref.watch(matchProvider);
+    final activeSession = ref.watch(activeSessionProvider);
 
     // Calculate Wins/Losses
     final wins = matches.where((m) => m.result == MatchResult.win).length;
@@ -38,7 +43,7 @@ class DashboardScreen extends ConsumerWidget {
                 const SizedBox(height: 16),
                 _buildBentoStats(context, wins, losses),
                 const SizedBox(height: 40),
-                _buildLogMatchButton(context, ref),
+                _buildActionArea(context, ref, activeSession, matches),
                 const SizedBox(height: 100), // Bottom padding for nav bar
               ],
             ),
@@ -137,68 +142,8 @@ class DashboardScreen extends ConsumerWidget {
   }
 
   Widget _buildHeroRating(BuildContext context, double currentRating) {
-    final colorScheme = Theme.of(context).colorScheme;
-    final String level = currentRating >= 6.0 ? "Advanced" : (currentRating >= 4.0 ? "Intermediate" : "Beginner");
-
-    return Column(
-      children: [
-        Stack(
-          alignment: Alignment.center,
-          children: [
-            // Glow effect
-            Container(
-              width: 150,
-              height: 150,
-              decoration: BoxDecoration(
-                shape: BoxShape.circle,
-                boxShadow: [
-                  BoxShadow(
-                    color: colorScheme.primary.withOpacity(0.15),
-                    blurRadius: 60,
-                    spreadRadius: 20,
-                  ),
-                ],
-              ),
-            ),
-            Text(
-              currentRating.toStringAsFixed(1),
-              style: Theme.of(context).textTheme.displayLarge?.copyWith(
-                fontSize: 120,
-                height: 1.0,
-                color: colorScheme.primary,
-                shadows: [
-                  Shadow(
-                    color: colorScheme.primary.withOpacity(0.6),
-                    blurRadius: 15,
-                  ),
-                ],
-              ),
-            ),
-          ],
-        ),
-        const SizedBox(height: 16),
-        Container(
-          padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 6),
-          decoration: BoxDecoration(
-            color: colorScheme.primary.withOpacity(0.1),
-            borderRadius: BorderRadius.circular(20),
-            border: Border.all(color: colorScheme.primary.withOpacity(0.2)),
-          ),
-          child: Row(
-            mainAxisSize: MainAxisSize.min,
-            children: [
-              Icon(Icons.stars, color: colorScheme.primary, size: 18),
-              const SizedBox(width: 8),
-              Text(
-                'CURRENT LEVEL: ${level.toUpperCase()}',
-                style: Theme.of(context).textTheme.labelLarge?.copyWith(
-                  color: colorScheme.primary,
-                ),
-              ),
-            ],
-          ),
-        ),
-      ],
+    return Center(
+      child: SegmentedRatingGauge(rating: currentRating),
     );
   }
 
@@ -375,6 +320,178 @@ class DashboardScreen extends ConsumerWidget {
           ],
         ),
       ),
+    );
+  }
+
+  Widget _buildActionArea(BuildContext context, WidgetRef ref, PlaySession? activeSession, List<MatchRecord> matches) {
+    if (activeSession == null) {
+      return _buildStartSessionButton(context, ref, matches);
+    } else {
+      return Column(
+        crossAxisAlignment: CrossAxisAlignment.stretch,
+        children: [
+          Container(
+            padding: const EdgeInsets.symmetric(vertical: 12, horizontal: 16),
+            decoration: BoxDecoration(
+              color: Theme.of(context).colorScheme.primary.withValues(alpha: 0.1),
+              borderRadius: BorderRadius.circular(12),
+              border: Border.all(color: Theme.of(context).colorScheme.primary.withValues(alpha: 0.3)),
+            ),
+            child: Row(
+              children: [
+                Icon(Icons.circle, color: Theme.of(context).colorScheme.primary, size: 12),
+                const SizedBox(width: 12),
+                Expanded(
+                  child: Text(
+                    'Active Session at ${activeSession.location}',
+                    style: Theme.of(context).textTheme.labelLarge?.copyWith(
+                      color: Theme.of(context).colorScheme.primary,
+                    ),
+                  ),
+                ),
+              ],
+            ),
+          ),
+          const SizedBox(height: 16),
+          _buildLogMatchButton(context, ref),
+          const SizedBox(height: 12),
+          OutlinedButton(
+            style: OutlinedButton.styleFrom(
+              foregroundColor: Theme.of(context).colorScheme.error,
+              side: BorderSide(color: Theme.of(context).colorScheme.error.withValues(alpha: 0.5)),
+              padding: const EdgeInsets.symmetric(vertical: 16),
+              shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
+            ),
+            onPressed: () {
+              ref.read(activeSessionProvider.notifier).endSession();
+            },
+            child: Text(
+              'END SESSION',
+              style: Theme.of(context).textTheme.labelLarge?.copyWith(letterSpacing: 1.5),
+            ),
+          ),
+        ],
+      );
+    }
+  }
+
+  Widget _buildStartSessionButton(BuildContext context, WidgetRef ref, List<MatchRecord> matches) {
+    final colorScheme = Theme.of(context).colorScheme;
+    return Container(
+      decoration: BoxDecoration(
+        boxShadow: [
+          BoxShadow(
+            color: colorScheme.primary.withOpacity(0.3),
+            blurRadius: 30,
+            offset: const Offset(0, 4),
+          ),
+        ],
+      ),
+      child: ElevatedButton(
+        style: ElevatedButton.styleFrom(
+          backgroundColor: colorScheme.primary,
+          foregroundColor: colorScheme.onPrimary,
+          padding: const EdgeInsets.symmetric(vertical: 20),
+          shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
+          elevation: 0,
+        ),
+        onPressed: () => _showStartSessionModal(context, ref, matches),
+        child: Row(
+          mainAxisAlignment: MainAxisAlignment.center,
+          children: [
+            const Icon(Icons.play_arrow, size: 28),
+            const SizedBox(width: 12),
+            Text(
+              'START PADEL SESSION',
+              style: Theme.of(context).textTheme.headlineMedium?.copyWith(
+                color: colorScheme.onPrimary,
+                letterSpacing: 1.5,
+              ),
+            ),
+          ],
+        ),
+      ),
+    );
+  }
+
+  void _showStartSessionModal(BuildContext context, WidgetRef ref, List<MatchRecord> matches) {
+    final locations = AnalyticsEngine(matches).getTopLocations(limit: 3);
+    final locationController = TextEditingController();
+
+    showModalBottomSheet(
+      context: context,
+      isScrollControlled: true,
+      backgroundColor: Theme.of(context).colorScheme.surfaceContainerHigh,
+      shape: const RoundedRectangleBorder(
+        borderRadius: BorderRadius.vertical(top: Radius.circular(24)),
+      ),
+      builder: (context) {
+        return Padding(
+          padding: EdgeInsets.only(
+            bottom: MediaQuery.of(context).viewInsets.bottom,
+            left: 24,
+            right: 24,
+            top: 24,
+          ),
+          child: Column(
+            mainAxisSize: MainAxisSize.min,
+            crossAxisAlignment: CrossAxisAlignment.stretch,
+            children: [
+              Text(
+                'START SESSION',
+                style: Theme.of(context).textTheme.headlineMedium?.copyWith(color: Colors.white),
+              ),
+              const SizedBox(height: 24),
+              TextFormField(
+                controller: locationController,
+                decoration: InputDecoration(
+                  prefixIcon: Icon(Icons.location_on, color: Theme.of(context).colorScheme.outline),
+                  hintText: 'e.g. Padel Club Central',
+                  filled: true,
+                  fillColor: Theme.of(context).colorScheme.surfaceContainer,
+                  border: OutlineInputBorder(borderRadius: BorderRadius.circular(12), borderSide: BorderSide.none),
+                ),
+              ),
+              if (locations.isNotEmpty) ...[
+                const SizedBox(height: 16),
+                Text('Recent Locations', style: Theme.of(context).textTheme.labelSmall?.copyWith(color: Theme.of(context).colorScheme.outline)),
+                const SizedBox(height: 8),
+                Wrap(
+                  spacing: 8,
+                  children: locations.map((loc) {
+                    return ActionChip(
+                      label: Text(loc.name),
+                      onPressed: () {
+                        locationController.text = loc.name;
+                      },
+                      backgroundColor: Theme.of(context).colorScheme.surfaceContainerHighest,
+                      side: BorderSide.none,
+                    );
+                  }).toList(),
+                ),
+              ],
+              const SizedBox(height: 32),
+              ElevatedButton(
+                style: ElevatedButton.styleFrom(
+                  backgroundColor: Theme.of(context).colorScheme.primary,
+                  foregroundColor: Theme.of(context).colorScheme.onPrimary,
+                  padding: const EdgeInsets.symmetric(vertical: 16),
+                  shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+                ),
+                onPressed: () {
+                  final loc = locationController.text.trim();
+                  if (loc.isNotEmpty) {
+                    ref.read(activeSessionProvider.notifier).startSession(loc);
+                    Navigator.pop(context);
+                  }
+                },
+                child: Text('START', style: Theme.of(context).textTheme.labelLarge ?? const TextStyle()),
+              ),
+              const SizedBox(height: 32),
+            ],
+          ),
+        );
+      },
     );
   }
 }

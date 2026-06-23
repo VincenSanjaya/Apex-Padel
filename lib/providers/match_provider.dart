@@ -16,7 +16,7 @@ class MatchNotifier extends Notifier<List<MatchRecord>> {
     return _box.values.toList();
   }
 
-  Future<void> addMatch({
+  Future<String> addMatch({
     required DateTime date,
     required String location,
     String? partnerName,
@@ -39,6 +39,7 @@ class MatchNotifier extends Notifier<List<MatchRecord>> {
 
     await _box.put(record.id, record);
     state = _box.values.toList();
+    return record.id;
   }
 
   Future<void> deleteMatch(String id) async {
